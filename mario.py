@@ -55,7 +55,7 @@ class GrayScaleObservation(gym.ObservationWrapper):
     def permute_orientation(self, observation):
         # [H, W, C] 배열을 [C, H, W] 텐서로 바꿉니다.
         observation = np.transpose(observation, (2, 0, 1))
-        observation = torch.tensor(observation.copy(), dtype=torch.float)
+        observation = torch.tensor(observation.copy(), dtype=torch.float32)
         return observation
 
     def observation(self, observation):
@@ -125,7 +125,7 @@ class Mario:
         # 최적의 행동을 이용하기
         else:
             state = state[0].__array__() if isinstance(state, tuple) else state.__array__()
-            state = torch.tensor(state, device=self.device).unsqueeze(0)
+            state = torch.tensor(state, device=self.device, dtype=torch.float32).unsqueeze(0)
             action_values = self.net(state, model="online")
             action_idx = torch.argmax(action_values, axis=1).item()
 
@@ -207,10 +207,10 @@ class Mario(Mario):  # 연속성을 위한 하위 클래스입니다.
         state = first_if_tuple(state).__array__()
         next_state = first_if_tuple(next_state).__array__()
 
-        state = torch.tensor(state)
-        next_state = torch.tensor(next_state)
-        action = torch.tensor([action])
-        reward = torch.tensor([reward])
+        state = torch.tensor(state, dtype=torch.float32)
+        next_state = torch.tensor(next_state, dtype=torch.float32)
+        action = torch.tensor([action], dtype=torch.int64)
+        reward = torch.tensor([reward], dtype=torch.float32)
         done = torch.tensor([done])
 
         self.memory.add(TensorDict({
@@ -244,9 +244,9 @@ class MarioNet(nn.Module):
         if w != 84:
             raise ValueError(f"Expecting input width: 84, got: {w}")
 
-        self.online = self.__build_cnn(c, output_dim)
+        self.online = self.__build_cnn(c, output_dim).float()
 
-        self.target = self.__build_cnn(c, output_dim)
+        self.target = self.__build_cnn(c, output_dim).float()
         self.target.load_state_dict(self.online.state_dict())
 
         # Q_target 매개변수 값은 고정시킵니다.
@@ -574,6 +574,7 @@ def train_worker(worker_id, shared_memory, num_episodes):
     
     # 에이전트 초기화
     mario = Mario(state_dim=(4, 84, 84), action_dim=env.action_space.n, save_dir=Path("checkpoints"))
+    mario.net = mario.net.float()
     
     for episode in range(num_episodes):
         state, info = env.reset()
