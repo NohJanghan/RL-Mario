@@ -386,7 +386,7 @@ class MetricLogger:
         self.ep_rewards_plot = save_dir / "reward_plot.jpg"
         self.ep_lengths_plot = save_dir / "length_plot.jpg"
         self.ep_avg_losses_plot = save_dir / "loss_plot.jpg"
-        self.ep_avg_qs_plot = save_dir / "q_value_plot.jpg"  # Q-value 그래프 경로 추가
+        self.ep_avg_qs_plot = save_dir / "q_value_plot.jpg"
 
         # 지표(Metric)와 관련된 리스트입니다.
         self.ep_rewards = []
@@ -442,7 +442,7 @@ class MetricLogger:
         self.curr_ep_reward += reward
         self.curr_ep_length += 1
         
-        if loss is not None:
+        if loss is not None and loss != 0:  # loss가 0이 아닐 때만 기록
             self.curr_ep_loss += loss
             self.curr_ep_loss_length += 1
             
@@ -549,11 +549,15 @@ class MetricLogger:
             plt.close()
 
     def close(self):
+        """로거를 종료하고 리소스를 정리합니다."""
         self.writer.close()
         # 마지막 메모리 정리
         gc.collect()
-        if torch.backends.mps.is_available():
-            torch.backends.mps.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        elif torch.backends.mps.is_available():
+            # MPS 백엔드에서는 empty_cache() 대신 다른 방법으로 메모리 정리
+            torch.mps.empty_cache() if hasattr(torch.mps, 'empty_cache') else None
 
 from torch.distributions.categorical import Categorical
 
@@ -778,6 +782,8 @@ def train_worker(worker_id, shared_memory, num_episodes):
                 state, info = env.reset()
                 episode_reward = 0
                 episode_length = 0
+                episode_loss = 0
+                episode_loss_count = 0  # 이 변수를 반드시 초기화
                 prev_info = info
                 states, actions, rewards, next_states, dones, log_probs = [], [], [], [], [], []
                 
@@ -837,13 +843,18 @@ def train_worker(worker_id, shared_memory, num_episodes):
                                 dones_tensor
                             )
 
+                            # 손실값 누적
+                            if loss is not None:
+                                episode_loss += loss
+                                episode_loss_count += 1
+
                             # 공유 메모리에 결과 저장
                             result = {
                                 'worker_id': worker_id,
                                 'episode': episode,
                                 'reward': float(episode_reward),
                                 'length': float(episode_length),
-                                'loss': float(loss),
+                                'loss': float(episode_loss / episode_loss_count) if episode_loss_count > 0 else 0.0,
                                 'q_value': float(current_q)
                             }
                             
@@ -872,7 +883,7 @@ def train_worker(worker_id, shared_memory, num_episodes):
                                 'episode': episode,
                                 'reward': float(episode_reward),
                                 'length': float(episode_length),
-                                'loss': float(loss) if 'loss' in locals() else 0.0,
+                                'loss': float(episode_loss / episode_loss_count) if episode_loss_count > 0 else 0.0,
                                 'q_value': float(current_q) if 'current_q' in locals() else 0.0
                             }
                             shared_memory.put(result, block=True, timeout=10)
