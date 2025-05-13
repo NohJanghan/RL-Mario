@@ -8,10 +8,12 @@ dependencies = [
     "gym-super-mario-bros>=7.4.0",
     "numpy==1.22",
     "seaborn>=0.13.2",
+    "tensorboard>=2.19.0",
     "torch>=2.7.0",
     "torchaudio>=2.7.0",
     "torchrl>=0.8.0",
     "torchvision>=0.22.0",
+    "tqdm>=4.67.1",
 ]
 
 [dependency-groups]
