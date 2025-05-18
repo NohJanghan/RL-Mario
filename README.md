@@ -1,12 +1,20 @@
 # 강화학습 기반 슈퍼 마리오 게임
 
-이 프로젝트는 강화학습을 사용하여 슈퍼 마리오 게임을 자동으로 플레이하는 AI를 구현합니다. PPO(Proximal Policy Optimization) 알고리즘을 사용하여 마리오가 게임을 학습하고 개선합니다.
+이 프로젝트는 강화학습을 사용하여 슈퍼 마리오 게임을 자동으로 플레이하는 AI를 구현합니다. 
+강화학습에 사용되는 다양한 알고리즘의 학습 및 적용을 시도해 보려고 합니다.
+
+아래와 같은 개념을 공부하고 적용하고 있습니다.
+1. epsilon-greedy
+2. Q-learning
+3. Actor-Critic (공부 중,,)
+4. PPO (공부 중,,)
+
 
 ## 프로젝트 구조
 
 ### 1. 핵심 파일
 - `mario.py`: 마리오 환경 및 에이전트 구현
-- `PPOmario.py`: PPO 알고리즘 구현
+- `PPOmario.py`: PPO 알고리즘 구현 및 학습 중,,,
 - `main.ipynb`: 메인 학습 스크립트
 - `inference.py`: 학습된 모델 추론
 
@@ -36,7 +44,6 @@ git clone [repository-url]
 
 2. 가상 환경을 생성하고 활성화합니다:
 ```bash
-python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # 또는
 .venv\Scripts\activate  # Windows
@@ -44,19 +51,19 @@ source .venv/bin/activate  # Linux/Mac
 
 3. 필요한 패키지를 설치합니다:
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ## 사용 방법
 
 ### 학습 실행
 ```bash
-python main.py
+uv run main.py
 ```
 
 ### 추론 실행
 ```bash
-python inference.py
+uv run inference.py
 ```
 
 ## 주요 기능
@@ -136,7 +143,7 @@ class MarioNet(nn.Module):
 ```
 
 ## 참고 자료
-
+- [혁펜하임 강화학습 이론](https://youtu.be/cvctS4xWSaU?si=PpxgYrUgy-XQykK-)
 - [PPO 논문](https://arxiv.org/abs/1707.06347)
 - [Gym 문서](https://gym.openai.com/)
 - [PyTorch 문서](https://pytorch.org/docs/stable/index.html)
