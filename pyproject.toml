@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "ale-py>=0.11.0",
     "gym-super-mario-bros>=7.4.0",
+    "gymnasium[other]>=1.1.1",
+    "ipykernel>=6.29.5",
     "numpy==1.22",
     "seaborn>=0.13.2",
     "tensorboard>=2.19.0",
