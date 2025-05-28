@@ -33,10 +33,10 @@ EXPLORATION_RATE_DECAY = 0.99999
 EXPLORATION_RATE_MIN = 0.1
 GAMMA = 0.9  # Discount factor
 BATCH_SIZE = 128
-BURNIN = 1e4  # Min experiences before training
-LEARN_EVERY = 3  # Experiences between Q_online updates
-SYNC_EVERY = 1e4  # Experiences between Q_target & Q_online sync
-SAVE_EVERY = 5e4  # Experiences between saving model
+BURNIN = 5000  # Min experiences before training
+LEARN_EVERY = 5  # Experiences between Q_online updates
+SYNC_EVERY = 10000  # Experiences between Q_target & Q_online sync
+SAVE_EVERY = 10000  # Experiences between saving model
 MEMORY_SIZE = 100000
 EPISODES = 40000
 
@@ -115,17 +115,17 @@ class MarioNet(nn.Module):
 
     def _build_net(self, c, output_dim):
         return nn.Sequential(
-            nn.Conv2d(in_channels=c, out_channels=32, kernel_size=8, stride=4),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=c, out_channels=64, kernel_size=8, stride=4),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3136, 512),
+            nn.Linear(128 * 7 * 7, 512),
             nn.ReLU(),
             nn.Linear(512, output_dim),
         )
@@ -318,7 +318,7 @@ class MetricLogger:
         self.curr_ep_length = 0
         self.curr_ep_loss = 0.0
         self.curr_ep_q = 0.0
-        self.curr_ep_loss_length = 0
+        self.curr_ep_loss_length = 0.0
 
     def _get_mean_metric(self, metric_list, window=100):
         if not metric_list:
