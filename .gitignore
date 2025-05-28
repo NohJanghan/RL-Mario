@@ -11,3 +11,4 @@ wheels/
 
 # rl
 checkpoints/**
+test_single/*
