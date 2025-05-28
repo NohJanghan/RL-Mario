@@ -264,7 +264,7 @@ class Mario:
 
 class MetricLogger:
     def __init__(self, save_dir):
-        self.save_log = save_dir / "log.txt" # Changed to .txt for clarity
+        self.save_log = save_dir / "log.txt"
         with open(self.save_log, "w") as f:
             f.write(
                 f"{'Episode':>8}{'Step':>8}{'Epsilon':>10}{'MeanReward':>15}"
@@ -292,10 +292,46 @@ class MetricLogger:
         self.init_episode()
         self.record_time = time.time()
 
+    def log_model_visualization(self, model, device, input_shape=(4, 84, 84)):
+        try:
+            # Create dummy input for model graph
+            dummy_input = torch.randn(1, *input_shape).to(device)
+
+            # Log model graph
+            self.writer.add_graph(model, dummy_input)
+
+            # Calculate parameter statistics
+            total_params = sum(p.numel() for p in model.parameters())
+            trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+            # Layer-wise parameter information
+            layer_info = []
+            for name, param in model.named_parameters():
+                layer_info.append(f"{name}: {param.numel():,} parameters")
+
+            # Create parameter summary text
+            param_summary = f"""
+Model Parameter Summary:
+- Total Parameters: {total_params:,}
+- Trainable Parameters: {trainable_params:,}
+- Non-trainable Parameters: {total_params - trainable_params:,}
+
+Layer-wise Parameters:
+{chr(10).join(layer_info)}
+            """
+
+            # Log parameter information as text
+            self.writer.add_text("Model/Parameter_Summary", param_summary)
+
+            print(f"Model visualization logged to TensorBoard")
+
+        except Exception as e:
+            print(f"Warning: Failed to log model visualization: {e}")
+
     def log_step(self, reward, loss, q):
         self.curr_ep_reward += reward
         self.curr_ep_length += 1
-        if loss is not None and q is not None : # Ensure loss and q are not None
+        if loss is not None and q is not None:
             self.curr_ep_loss += loss
             self.curr_ep_q += q
             self.curr_ep_loss_length += 1
@@ -304,8 +340,8 @@ class MetricLogger:
         self.ep_rewards.append(self.curr_ep_reward)
         self.ep_lengths.append(self.curr_ep_length)
         if self.curr_ep_loss_length == 0:
-            ep_avg_loss = 0.0 # 부동 소수점으로 초기화
-            ep_avg_q = 0.0    # 부동 소수점으로 초기화
+            ep_avg_loss = 0.0
+            ep_avg_q = 0.0
         else:
             ep_avg_loss = np.round(self.curr_ep_loss / self.curr_ep_loss_length, 5)
             ep_avg_q = np.round(self.curr_ep_q / self.curr_ep_loss_length, 5)
@@ -327,7 +363,6 @@ class MetricLogger:
 
     def _plot_metric(self, data, metric_name_base, plot_save_path, episode_label="Episode"):
         plt.figure()
-        # 레이블에서 "avg_" 제거하여 "Average Losses" 대신 "Avg Losses"로 표시
         label_metric_name = metric_name_base.replace("avg_", "avg ").replace("_", " ").title()
         plt.plot(data, label=f"Moving Avg of {label_metric_name}")
         plt.xlabel(episode_label)
@@ -348,7 +383,6 @@ class MetricLogger:
         self.writer.add_scalar('Metrics/Mean Loss', mean_ep_loss, episode)
         self.writer.add_scalar('Metrics/Mean Q Value', mean_ep_q, episode)
         self.writer.add_scalar('Metrics/Epsilon', epsilon, episode)
-
 
         self.moving_avg_ep_rewards.append(mean_ep_reward)
         self.moving_avg_ep_lengths.append(mean_ep_length)
@@ -412,6 +446,9 @@ def main():
 
     mario = Mario(state_dim=(4, RESIZE_SHAPE, RESIZE_SHAPE), action_dim=env.action_space.n, save_dir=save_dir)
     logger = MetricLogger(save_dir)
+
+    # Log model visualization to TensorBoard
+    logger.log_model_visualization(mario.net, mario.device)
 
     print(f"Starting training for {EPISODES} episodes...")
 
