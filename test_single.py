@@ -32,11 +32,9 @@ def set_seeds(seed=42):
 def load_mario_model(checkpoint_path, state_dim, action_dim):
     """체크포인트에서 Mario 모델을 로드합니다."""
     # 임시 save_dir (추론에서는 사용하지 않음)
-    temp_save_dir = Path("temp")
-    temp_save_dir.mkdir(exist_ok=True)
 
     # Mario 인스턴스 생성
-    mario = Mario(state_dim=state_dim, action_dim=action_dim, save_dir=temp_save_dir)
+    mario = Mario(state_dim=state_dim, action_dim=action_dim, save_dir=None)
 
     # 체크포인트 로드
     checkpoint = torch.load(checkpoint_path, map_location=mario.device)
