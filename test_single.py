@@ -5,6 +5,8 @@ from nes_py.wrappers import JoypadSpace
 import gym_super_mario_bros
 from pathlib import Path
 import time
+import random
+import numpy as np
 
 # single.py에서 필요한 클래스들 import
 from single import (
@@ -16,6 +18,16 @@ from single import (
     FRAME_SKIP,
     RESIZE_SHAPE
 )
+
+def set_seeds(seed=42):
+    """재현성을 위해 모든 시드를 고정합니다."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 def load_mario_model(checkpoint_path, state_dim, action_dim):
     """체크포인트에서 Mario 모델을 로드합니다."""
@@ -36,8 +48,12 @@ def load_mario_model(checkpoint_path, state_dim, action_dim):
 
     return mario
 
-def test_mario(checkpoint_path, num_episodes=5, render=True):
+def test_mario(checkpoint_path, num_episodes=5, render=True, seed=42):
     """로드된 모델로 Mario를 테스트합니다."""
+
+    # 시드 고정
+    set_seeds(seed)
+    print(f"Seeds set to {seed} for reproducibility")
 
     # 환경 설정 (single.py와 동일)
     render_mode = 'human' if render else 'rgb_array'
@@ -135,7 +151,7 @@ def test_mario(checkpoint_path, num_episodes=5, render=True):
 def main():
     # 체크포인트 파일 경로 설정
     # 실제 체크포인트 파일 경로로 수정해주세요
-    checkpoint_path = "test_single/mario_net_2.chkpt"
+    checkpoint_path = "test_single/mario_net_1.chkpt"
 
     # 체크포인트 파일이 존재하는지 확인
     if not Path(checkpoint_path).exists():
@@ -157,7 +173,8 @@ def main():
     test_mario(
         checkpoint_path=checkpoint_path,
         num_episodes=3,  # 테스트할 에피소드 수
-        render=True      # 화면 렌더링 여부
+        render=True,     # 화면 렌더링 여부
+        seed=42          # 재현성을 위한 시드
     )
 
 if __name__ == "__main__":
