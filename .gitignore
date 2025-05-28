@@ -10,5 +10,7 @@ wheels/
 .venv
 
 # rl
-checkpoints/**
-test_single/*
+checkpoints
+test_single
+runs_parallel_main
+checkpoints_parallel_workers
