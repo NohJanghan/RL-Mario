@@ -2,11 +2,9 @@ import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms as T
-from PIL import Image
 import numpy as np
 from pathlib import Path
-from collections import deque
-import random, datetime, time, os
+import datetime, time
 
 # Gym is an OpenAI toolkit for RL
 import gym
