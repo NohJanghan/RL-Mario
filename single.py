@@ -143,10 +143,14 @@ class Mario:
         self.action_dim = action_dim
         self.save_dir = save_dir
 
-        if torch.backends.mps.is_available():
-            self.device = "mps"
-        elif torch.cuda.is_available():
+        # Windows에서 CUDA 최적화
+        if torch.cuda.is_available():
             self.device = "cuda"
+            # CUDA 스트림 최적화
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.deterministic = False
+        elif torch.backends.mps.is_available():
+            self.device = "mps"
         else:
             self.device = "cpu"
         print(f"Using device: {self.device}")
@@ -462,8 +466,8 @@ def main():
         state_tuple = env.reset()
         state = _get_obs(state_tuple)
 
+        env.render()
         while True:
-            env.render()
             action = mario.act(state)
             # next_state, reward, done, trunc, info 순서 확인 및 trunc 변수 사용
             step_result = env.step(action)
