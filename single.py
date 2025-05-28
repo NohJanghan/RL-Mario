@@ -22,7 +22,7 @@ from torchrl.data import TensorDictReplayBuffer, LazyMemmapStorage
 import matplotlib.pyplot as plt
 
 # Constants and hyperparameters
-RENDER_MODE = 'human'  # Options: 'human', 'rgb_array'
+RENDER_MODE = 'rgb_array'  # Options: 'human', 'rgb_array'
 MARIO_LEVEL = "SuperMarioBros-1-1-v0"
 FRAME_SKIP = 4
 RESIZE_SHAPE = 84
