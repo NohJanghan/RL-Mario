@@ -98,11 +98,8 @@ def test_mario(checkpoint_path, num_episodes=5, render=True, seed=42):
         total_length = 0
 
         print(f"\nEpisode {episode + 1}/{num_episodes} started...")
-
+        env.render()
         while True:
-            if render:
-                env.render()
-                time.sleep(0.02)  # 약간의 딜레이로 게임을 보기 쉽게
 
             # 모델로 액션 예측 (탐험 없이)
             action = mario.act(state)
