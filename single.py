@@ -180,7 +180,6 @@ class Mario:
         if np.random.rand() < self.exploration_rate:
             action_idx = np.random.randint(self.action_dim)
         else:
-            # state가 이미 관측 객체 (예: LazyFrames)라고 가정합니다.
             state_np = state.__array__()
             state_tensor = torch.tensor(state_np, device=self.device).unsqueeze(0)
             action_values = self.net(state_tensor, model="online")
@@ -192,7 +191,6 @@ class Mario:
         return action_idx
 
     def cache(self, state, next_state, action, reward, done):
-        # state와 next_state가 이미 관측 객체 (예: LazyFrames)라고 가정합니다.
         state_np = state.__array__()
         next_state_np = next_state.__array__()
 
@@ -210,7 +208,6 @@ class Mario:
         return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
     def td_estimate(self, state, action):
-        # Ensure actions are long type for indexing
         current_Q = self.net(state, model="online")[
             np.arange(0, self.batch_size), action.long()
         ]
@@ -249,7 +246,7 @@ class Mario:
         if self.curr_step % self.sync_every == 0:
             self.sync_Q_target()
 
-        if self.curr_step % self.save_every == 0 and self.curr_step > 0: # Avoid saving at step 0
+        if self.curr_step % self.save_every == 0 and self.curr_step > 0:
             self.save()
 
         if self.curr_step < self.burnin:
@@ -470,21 +467,19 @@ def main():
         env.render()
         while True:
             action = mario.act(state)
-            # next_state, reward, done, trunc, info 순서 확인 및 trunc 변수 사용
             step_result = env.step(action)
             next_state = _get_obs(step_result[0])
             reward = step_result[1]
             done = step_result[2]
-            trunc = step_result[3] # trunc 변수 할당
+            trunc = step_result[3]
             info = step_result[4]
-
 
             mario.cache(state, next_state, action, reward, done)
             q, loss = mario.learn()
             logger.log_step(reward, loss, q)
             state = next_state
 
-            if done or trunc or info.get("flag_get", False): # trunc 조건 추가
+            if done or trunc or info.get("flag_get", False):
                 break
 
         logger.log_episode()
