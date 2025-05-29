@@ -38,7 +38,7 @@ LEARN_EVERY = 5  # Experiences between Q_online updates
 SYNC_EVERY = 10000  # Experiences between Q_target & Q_online sync
 SAVE_EVERY = 10000  # Experiences between saving model
 MEMORY_SIZE = 100000
-EPISODES = 40000
+MAX_STEPS = 4000000  # Maximum training steps
 
 # Learning parameters
 LEARNING_RATE = 0.00025
@@ -454,7 +454,7 @@ def main():
     # Log model visualization to TensorBoard
     logger.log_model_visualization(mario.net, mario.device)
 
-    print(f"Starting training for {EPISODES} episodes...")
+    print(f"Starting training for {MAX_STEPS:,} steps...")
 
     def _get_obs(obs_or_tuple):
         """환경에서 반환된 관측값 또는 (관측값, 정보) 튜플에서 실제 관측값을 추출합니다."""
@@ -462,7 +462,8 @@ def main():
             return obs_or_tuple[0]
         return obs_or_tuple
 
-    for e in range(EPISODES):
+    episode = 0
+    while mario.curr_step < MAX_STEPS:
         state_tuple = env.reset()
         state = _get_obs(state_tuple)
 
@@ -488,8 +489,10 @@ def main():
 
         logger.log_episode()
 
-        if (e % 20 == 0) or (e == EPISODES - 1):
-            logger.record(episode=e, epsilon=mario.exploration_rate, step=mario.curr_step)
+        if (episode % 20 == 0) or (mario.curr_step >= MAX_STEPS):
+            logger.record(episode=episode, epsilon=mario.exploration_rate, step=mario.curr_step)
+
+        episode += 1
 
     logger.close()
     print("Training finished.")
