@@ -14,10 +14,12 @@ from single import (
     SkipFrame,
     GrayScaleObservation,
     ResizeObservation,
-    MARIO_LEVEL,
+    # MARIO_LEVEL,
     FRAME_SKIP,
     RESIZE_SHAPE
 )
+MARIO_LEVEL = "SuperMarioBros-1-1-v0"
+CHECKPOINT_PATH = "test_single/mario_net_400.chkpt"
 
 def set_seeds(seed=42):
     """재현성을 위해 모든 시드를 고정합니다."""
@@ -146,7 +148,7 @@ def test_mario(checkpoint_path, num_episodes=5, render=True, seed=42):
 def main():
     # 체크포인트 파일 경로 설정
     # 실제 체크포인트 파일 경로로 수정해주세요
-    checkpoint_path = "test_single/mario_net_1.chkpt"
+    checkpoint_path = CHECKPOINT_PATH
 
     # 체크포인트 파일이 존재하는지 확인
     if not Path(checkpoint_path).exists():
