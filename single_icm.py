@@ -1,3 +1,20 @@
+"""
+Super Mario Bros 강화학습 with ICM (Intrinsic Curiosity Module)
+
+이 파일은 ICM을 활용한 Mario 강화학습 구현입니다.
+
+주요 개선사항:
+1. ICM 논문에 따른 손실 함수 가중치 적용: (1-β)*L_I + β*L_F
+2. 내재적 보상 정규화 옵션 추가로 안정성 향상
+3. 하이퍼파라미터 세분화로 조정 가능성 증대
+4. 더 나은 가독성을 위한 코드 구조 개선
+
+ICM 구성 요소:
+- FeatureExtractor: 상태를 저차원 특징으로 압축
+- InverseModel: 연속된 두 상태 특징으로부터 행동 예측
+- ForwardModel: 현재 상태 특징과 행동으로부터 다음 상태 특징 예측
+"""
+
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
@@ -46,6 +63,9 @@ USE_ICM = True # ICM 사용 여부 결정
 ICM_LR_SCALE = 1.0  # ICM 모델 학습률 스케일 (기존 LR에 곱해짐)
 BETA_ICM = 0.2  # 내재적 보상 가중치
 ICM_FEATURE_SIZE = 256 # Feature extractor의 출력 크기
+
+ICM_BETA_LOSS = 0.2  # Forward Model 손실 가중치 (논문 기준)
+ICM_NORMALIZE_INTRINSIC_REWARD = True  # 내재적 보상 정규화 여부
 
 class SkipFrame(gym.Wrapper):
     def __init__(self, env, skip):
@@ -209,13 +229,23 @@ class ICM(nn.Module):
             phi_t_plus_1_pred = self.forward_model(phi_t, action_t_one_hot)
             
             # 내재적 보상: 예측된 다음 상태 특징과 실제 다음 상태 특징 간의 MSE
-            # 스케일링을 위해 0.5 * MSE 사용하기도 함
-            intrinsic_reward = 0.5 * torch.sum((phi_t_plus_1_pred - phi_t_plus_1_actual)**2, dim=1)
+            intrinsic_reward = 0.5 * torch.mean((phi_t_plus_1_pred - phi_t_plus_1_actual)**2, dim=1)
+            
+            # 정규화 옵션 적용
+            if ICM_NORMALIZE_INTRINSIC_REWARD and intrinsic_reward.numel() > 1:
+                # 배치 내에서 정규화 (평균 0, 표준편차 1)
+                reward_mean = intrinsic_reward.mean()
+                reward_std = intrinsic_reward.std() + 1e-8  # 수치 안정성을 위한 작은 값 추가
+                intrinsic_reward = (intrinsic_reward - reward_mean) / reward_std
+                # 양수로 변환 (내재적 보상은 항상 양수여야 함)
+                intrinsic_reward = torch.exp(intrinsic_reward)
+                
         return intrinsic_reward # (N,) 형태의 텐서
 
     def train_batch(self, state_t, state_t_plus_1, action_t):
         """
         ICM 모듈을 학습합니다.
+        ICM 논문에 따라 손실 함수는 (1-β)*L_I + β*L_F 형태로 구성됩니다.
         state_t, state_t_plus_1: (N, C, H, W)
         action_t: (N,) or (N, 1), 실제 수행된 액션 인덱스
         """
@@ -226,15 +256,17 @@ class ICM(nn.Module):
         phi_t = self.feature_extractor(state_t)
         phi_t_plus_1_actual = self.feature_extractor(state_t_plus_1)
 
+        # Forward Model 손실
         action_t_one_hot = self._to_one_hot(action_t)
         phi_t_plus_1_pred = self.forward_model(phi_t.detach(), action_t_one_hot)
-        
         loss_fwd = self.mse_loss(phi_t_plus_1_pred, phi_t_plus_1_actual.detach())
 
+        # Inverse Model 손실
         pred_action_logits = self.inverse_model(phi_t, phi_t_plus_1_actual)
         loss_inv = self.ce_loss(pred_action_logits, action_t.long().squeeze())
         
-        total_loss = loss_inv + loss_fwd
+        # ICM 논문에 따른 총 손실: (1-β)*L_I + β*L_F
+        total_loss = (1 - ICM_BETA_LOSS) * loss_inv + ICM_BETA_LOSS * loss_fwd
 
         self.optimizer.zero_grad()
         total_loss.backward()
