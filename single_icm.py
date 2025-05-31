@@ -65,7 +65,7 @@ BETA_ICM = 0.2  # 내재적 보상 가중치
 ICM_FEATURE_SIZE = 256 # Feature extractor의 출력 크기
 
 ICM_BETA_LOSS = 0.2  # Forward Model 손실 가중치 (논문 기준)
-ICM_NORMALIZE_INTRINSIC_REWARD = True  # 내재적 보상 정규화 여부
+ICM_NORMALIZE_INTRINSIC_REWARD = False  # 내재적 보상 정규화 여부
 
 class SkipFrame(gym.Wrapper):
     def __init__(self, env, skip):
@@ -130,13 +130,18 @@ class FeatureExtractor(nn.Module):
             raise ValueError(f"Expecting input width: {RESIZE_SHAPE}, got: {w}")
 
         self.cnn = nn.Sequential(
-            nn.Conv2d(in_channels=c, out_channels=32, kernel_size=8, stride=4),
+            nn.Conv2d(in_channels=c, out_channels=64, kernel_size=8, stride=4),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=4, stride=2),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Flatten(),
+            nn.Linear(128 * 7 * 7, 512),
+            nn.ReLU()
         )
 
         # CNN 출력 크기 계산
